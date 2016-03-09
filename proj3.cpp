@@ -1,7 +1,23 @@
+//*********************************************************
+//
+// Harrison Engel and Duy Dang
+// Operating Systems
+// Project #3: Producer/Consumer Problem with Faulty Threads
+// Program 3: osp3.cpp
+// 03/14/2016
+// Dr. Michael C. Scherger
+//
+//*********************************************************
+
 #include <iostream>
 #include <cmath>
+#include <vector>
+#include <semaphore.h>
+#include <pthread.h>
 
 using namespace std;
+
+sem_t semaphore;
 
 int items = -1;
 int buf_len = -1 ;
@@ -68,12 +84,81 @@ int main(int args, char *argv[])
   buffer.data = &buf;
   buffer.size = buf_len;
   buffer.cur_pos = 0;
+
+
+
+  //Initialize semaphore
+  //int sem_init(sem_t* sem, int pshared, unsigned value);
+  sem_init(&semaphore, 0, 1);
+
+
+  pthread_t *producer_threads = new pthread_t[prod_threads];
+  //pthread_t** producer_thread_array = &producer_threads;
+
+  pthread_t *faulty_threads = new pthread_t[fault_threads];
+  //pthread_t** faulty_thread_array = &faulty_threads;
+
+  pthread_t *consumer_threads = new pthread_t[cons_threads];
+  //pthread_t** consumer_thread_array = &consumer_threads;
+
+  /* Create independent threads each of which will execute function */
+
+  for(i=0; i<prod_threads; i++)
+    {
+      int iret = pthread_create( &producer_threads[i], NULL, prod, &buffer);
+    }
+
+  for(i=0; i<fault_threads; i++)
+    {
+      int iret = pthread_create( &faulty_threads[i], NULL, fake_prod, &buffer);
+    }
+
+  for(i=0; i<cons_threads; i++)
+    {
+      int iret = pthread_create( &consumer_threads[i], NULL, cons, &buffer);
+    }
+
+
+  for(i=0; i<prod_threads; i++)
+    {
+      pthread_t** temp = &producer_threads[i];
+      pthread_join( **temp, NULL);
+    }
+
+  for(i=0; i<fault_threads; i++)
+    {
+      pthread_t** temp = &faulty_threads[i];
+      pthread_join( **temp, NULL);
+    }
+
+  for(i=0; i<cons_threads; i++)
+    {
+      pthread_t** temp = &consumer_threads[i];
+      pthread_join( **temp, NULL);
+    }
+
+
+  return 0;
 }
 
 void *prod(void *arg)
 {
   Buffer *buf = (struct Buffer*)arg;
+
+  for (int i=0; i < items; i++) {
+
+    int prime = get_rand(2, 999999);
+
+    while (!is_prime(prime)) {
+      prime = get_rand(2, 999999);
+    }
+
+    sem_wait(semaphore);
+
+
+  }
   
+
 
 }
 
