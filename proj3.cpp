@@ -19,6 +19,9 @@ using namespace std;
 
 sem_t semaphore;
 
+//int total_consumed = 0; //only to be accessed between sem_wait() and sem_post()
+//int total_to_be_consumed;
+
 int items = -1;
 int buf_len = -1 ;
 int prod_threads = -1;
@@ -31,7 +34,6 @@ struct Buffer{
   int size;
   int cur_pos;
 } buffer;
-
 
 int get_rand(int start, int end);
 bool is_prime(int n);
@@ -85,7 +87,7 @@ int main(int args, char *argv[])
   buffer.size = buf_len;
   buffer.cur_pos = 0;
 
-
+  total_to_be_consumed = (prod_threads + fault_threads) * items;
 
   //Initialize semaphore
   //int sem_init(sem_t* sem, int pshared, unsigned value);
@@ -105,17 +107,20 @@ int main(int args, char *argv[])
 
   for(i=0; i<prod_threads; i++)
     {
-      int iret = pthread_create( &producer_threads[i], NULL, prod, &buffer);
+      int *index = new int[1];
+      int iret = pthread_create( &producer_threads[i], NULL, prod, index);
     }
 
   for(i=0; i<fault_threads; i++)
     {
-      int iret = pthread_create( &faulty_threads[i], NULL, fake_prod, &buffer);
+      int *index = new int[1];
+      int iret = pthread_create( &faulty_threads[i], NULL, fake_prod, index);
     }
 
   for(i=0; i<cons_threads; i++)
     {
-      int iret = pthread_create( &consumer_threads[i], NULL, cons, &buffer);
+      int *index = new int[1];
+      int iret = pthread_create( &consumer_threads[i], NULL, cons, index);
     }
 
 
@@ -143,18 +148,27 @@ int main(int args, char *argv[])
 
 void *prod(void *arg)
 {
-  Buffer *buf = (struct Buffer*)arg;
+  //Buffer *buf = (struct Buffer*)arg;
+  int index = (int) *arg;
+  int prime = 0;
+
+  int insert_status = -2;
 
   for (int i=0; i < items; i++) {
 
-    int prime = get_rand(2, 999999);
-
-    while (!is_prime(prime)) {
+    if (insert_status != -1) {
       prime = get_rand(2, 999999);
+
+      while (!is_prime(prime)) {
+        prime = get_rand(2, 999999);
+      }
     }
 
-    sem_wait(semaphore);
+    sem_wait(&semaphore);
 
+    insert_status = insert(prime, buffer);
+
+    sem_post(&semaphore);
 
   }
   
@@ -164,14 +178,39 @@ void *prod(void *arg)
 
 void *cons(void *arg)
 {
-  Buffer *buf = (struct Buffer*)arg;
+  //Buffer *buf = (struct Buffer*)arg;
+  int index = (int) *arg;
   
+
+
 }
 
 void *fake_prod(void *arg)
 {
-  Buffer *buf = (struct Buffer*)arg;
+  //Buffer *buf = (struct Buffer*)arg;
+  int index = (int) *arg;
 
+  int even = 0;
+
+  int insert_status = -2;
+
+  for (int i=0; i < items; i++) {
+
+    if (insert_status != -1) {
+      even = get_rand(2, 999999);
+
+      while (even % 2 != 0) {
+        even = get_rand(2, 999999);
+      }
+    }
+
+    sem_wait(&semaphore);
+
+    insert_status = insert(even, buffer);
+
+    sem_post(&semaphore);
+
+  }
 
 }
 
@@ -218,6 +257,3 @@ int remove(Buffer buf)
     return *buf.data[buf.cur_pos];
   }
 }
-		       
-
-
