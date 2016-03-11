@@ -1,0 +1,13 @@
+Project 2
+
+1. Harrison Engel and Duy Dang
+
+2. Operating Systems: Project Number 2
+
+3. This project is to practice using Pthread and implementing thread synchronization.
+
+4. There are currently no known issue with this submission.
+
+5. Approximately 21 hours were put into this project including studying the material involved with code and the actual creation of code.
+
+6. The biggest difficulty is to implement thread synchronization without use of provided primitives such as mutexes and semaphores.

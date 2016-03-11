@@ -15,6 +15,8 @@
 #include <semaphore.h>
 #include <pthread.h>
 #include <time.h>
+#include <cstdlib>
+#include <cstring>
 
 using namespace std;
 
@@ -34,15 +36,19 @@ int fault_threads = -1;
 int cons_threads = -1;
 bool debug = false;
 
+static vector<int> individual_consumptions;
+
 struct Buffer{
-  int **data;
+  vector<int> data;
   int size;
   int cur_pos;
 } buffer;
 
 int get_rand(int start, int end);
 bool is_prime(int n);
-int insert(int data, Buffer buf);
+int insert(int data);
+int remove();
+void print_buffer();
 void *prod(void *arg);
 void *cons(void *arg);
 void *fake_prod(void *arg);
@@ -87,19 +93,19 @@ int main(int args, char *argv[])
     cout << "ERROR\n";
   }
 
-  int *buf = new int[buf_len];
-  buffer.data = &buf;
+  for (i=0; i < buf_len; i++) {
+    buffer.data.push_back(-1);
+  }
+
   buffer.size = buf_len;
   buffer.cur_pos = 0;
 
   total_to_be_consumed = (prod_threads + fault_threads) * items;
 
-  //Declare and initialize array to keep track of consumption of each consumer
-  int *individual_consumptions = new int[cons_threads];
-
+  //Initialize array to keep track of consumption of each consumer
   for (i=0; i< cons_threads; i++) {
 
-    &individual_consumptions[i] = 0;
+    individual_consumptions.push_back(0);
 
   }
 
@@ -108,15 +114,14 @@ int main(int args, char *argv[])
   sem_init(&semaphore, 0, 1);
 
 
-  pthread_t *producer_threads = new pthread_t[prod_threads];
-  //pthread_t** producer_thread_array = &producer_threads;
+  //pthread_t *producer_threads = new pthread_t[prod_threads];
+  pthread_t producer_threads [prod_threads];
 
-  pthread_t *faulty_threads = new pthread_t[fault_threads];
-  //pthread_t** faulty_thread_array = &faulty_threads;
+  //pthread_t *faulty_threads = new pthread_t[fault_threads];
+  pthread_t faulty_threads [fault_threads];
 
-  pthread_t *consumer_threads = new pthread_t[cons_threads];
-  //pthread_t** consumer_thread_array = &consumer_threads;
-
+  //pthread_t *consumer_threads = new pthread_t[cons_threads];
+  pthread_t consumer_threads [cons_threads];
 
 
 
@@ -125,54 +130,51 @@ int main(int args, char *argv[])
 
   /* Create independent threads each of which will execute function */
 
+  int prod_ids [prod_threads];
   for(i=0; i<prod_threads; i++)
     {
-      int *id = new int[1];
-      &id[0] = i;
+      prod_ids[i] = i;
 
-      int iret = pthread_create( &producer_threads[i], NULL, prod, id);
+      int iret = pthread_create( &(producer_threads[i]), NULL, prod, &(prod_ids[i]));
     }
 
+  int fault_ids [fault_threads];
   for(i=0; i<fault_threads; i++)
     {
-      int *id = new int[1];
-      *id = i;
+      fault_ids[i] = i;
 
-      int iret = pthread_create( &faulty_threads[i], NULL, fake_prod, id);
+      int iret = pthread_create( &(faulty_threads[i]), NULL, fake_prod, &(fault_ids[i]));
     }
 
+  int cons_ids [cons_threads];
   for(i=0; i<cons_threads; i++)
     {
-      int *id = new int[1];
-      *id = i;
+      cons_ids[i] = i;
 
-      int iret = pthread_create( &consumer_threads[i], NULL, cons, id);
+      int iret = pthread_create( &(consumer_threads[i]), NULL, cons, &(cons_ids[i]));
     }
 
 
   //Join all pthreads created
   for(i=0; i<prod_threads; i++)
     {
-      pthread_t** temp = &producer_threads[i];
-      pthread_join( **temp, NULL);
+      pthread_join( producer_threads[i], NULL);
     }
 
   for(i=0; i<fault_threads; i++)
     {
-      pthread_t** temp = &faulty_threads[i];
-      pthread_join( **temp, NULL);
+      pthread_join( faulty_threads[i], NULL);
     }
 
   for(i=0; i<cons_threads; i++)
     {
-      pthread_t** temp = &consumer_threads[i];
-      pthread_join( **temp, NULL);
+      pthread_join( consumer_threads[i], NULL);
     }
 
   double simulation_time_in_seconds = difftime(time(0), start);
 
   //Print statistics
-  cout << "PRODUCER / CONSUMER SIMULATION COMPLETE";
+  cout << "\nPRODUCER / CONSUMER SIMULATION COMPLETE";
 
   cout << "\n";
 
@@ -180,7 +182,7 @@ int main(int args, char *argv[])
 
   cout << "\n";
 
-  cout << "Number of Items Per Producer Thread:" << items ;
+  cout << "Number of Items Per Producer Thread: " << items ;
 
   cout << "\n";
 
@@ -218,7 +220,7 @@ int main(int args, char *argv[])
 
   for (int i=0; i < cons_threads; i++) {
 
-    cout << "  Thread " << i+1 << ": " << &individual_consumptions[i] << "\n";
+    cout << "  Thread " << i+1 << ": " << individual_consumptions[i] << "\n";
 
   }
 
@@ -232,13 +234,14 @@ int main(int args, char *argv[])
 void *prod(void *arg)
 {
   //Buffer *buf = (struct Buffer*)arg;
-  int id = (int) *arg;
+  int* id_container = (int*) arg;
+  int id = id_container[0];
   int prime = 0;
   int number_of_items_inserted = 0;
 
   int insert_status = -2;
 
-  for (int i=0; i < items; i++) {
+  while(number_of_items_inserted < items) {
 
     if (insert_status != -1) {
       prime = get_rand(2, 999999);
@@ -250,27 +253,27 @@ void *prod(void *arg)
 
     sem_wait(&semaphore);
 
-    insert_status = insert(prime, buffer);
+    insert_status = insert(prime);
 
     if (insert_status != -1) {
 
       number_of_items_inserted++;
 
-      cout << "(PRODUCER  " << id << " writes   " << number_of_items_inserted << "/" << items << "   " << prime << "):";
+      cout << "(PRODUCER  " << id+1 << " writes   " << number_of_items_inserted << "/" << items << "   " << prime << "):";
 
-      print_buffer(buffer);
+      print_buffer();
 
-    }
-
-    if(buffer.size == buffer.cur_pos) {
+      if(buffer.size == buffer.cur_pos) {
         
         cout << " *BUFFER NOW FULL*";
 
         time_full++;
 
-    }
+      }
 
-    cout << "\n";
+      cout << "\n";
+
+    }
 
     sem_post(&semaphore);
 
@@ -282,7 +285,8 @@ void *prod(void *arg)
 void *fake_prod(void *arg)
 {
   //Buffer *buf = (struct Buffer*)arg;
-  int id = (int) *arg;
+  int* id_container = (int*) arg;
+  int id = id_container[0];
 
   int number = 0;
 
@@ -290,7 +294,7 @@ void *fake_prod(void *arg)
 
   int insert_status = -2;
 
-  for (int i=0; i < items; i++) {
+  while (number_of_items_inserted < items) {
 
     if (insert_status != -1) {
       number = get_rand(2, 999999);
@@ -298,27 +302,27 @@ void *fake_prod(void *arg)
 
     sem_wait(&semaphore);
 
-    insert_status = insert(number, buffer);
+    insert_status = insert(number);
 
     if (insert_status != -1) {
 
       number_of_items_inserted++;
 
-      cout << "(PR*D*C*R  " << id << " writes   " << number_of_items_inserted << "/" << items << "   " << prime << "):";
+      cout << "(PR*D*C*R  " << id+1 << " writes   " << number_of_items_inserted << "/" << items << "   " << number << "):";
 
-      print_buffer(buffer);
+      print_buffer();
 
-    }
-
-    if(buffer.size == buffer.cur_pos) {
+      if(buffer.size == buffer.cur_pos) {
         
         cout << " *BUFFER NOW FULL*";
 
         time_full++;
 
-    }
+      }
 
-    cout << "\n";
+      cout << "\n";
+
+    }
 
     sem_post(&semaphore);
 
@@ -329,7 +333,9 @@ void *fake_prod(void *arg)
 void *cons(void *arg)
 {
   //Buffer *buf = (struct Buffer*)arg;
-  int id = (int) *arg;
+  int* id_container = (int*) arg;
+  int id = id_container[0];
+
   int remove_status;
   int number_of_items_removed = 0;
 
@@ -337,19 +343,19 @@ void *cons(void *arg)
 
     sem_wait(&semaphore);
 
-    remove_status = remove(buffer);
+    remove_status = remove();
 
     if (remove_status != -1) {
 
       total_consumed++;
 
-      &individual_consumptions[id]++;
+      individual_consumptions[id]++;
 
       number_of_items_removed++;
 
-      cout << "(CONSUMER  " << id << " reads   " << number_of_items_removed << "       " << remove_status << "):";
+      cout << "(CONSUMER  " << id+1 << " reads   " << number_of_items_removed << "       " << remove_status << "):";
 
-      print_buffer(buffer);
+      print_buffer();
 
       if (!is_prime(remove_status)) {
         cout << " *NOT PRIME*";
@@ -365,28 +371,26 @@ void *cons(void *arg)
 
       }
 
-    }
+      cout << "\n";
 
-    cout << "\n";
+    }
 
     sem_post(&semaphore);
 
   }
   
-
-
 }
 
-int insert(int data, Buffer buf)
+int insert(int input)
 {
-  if(buf.size == buf.cur_pos)
+  if(buffer.size == buffer.cur_pos)
     {
       return -1;
     }
 
-  *buf.data[buf.cur_pos] = data;
-  buf.cur_pos++;
-  return buf.cur_pos;
+  buffer.data[buffer.cur_pos] = input;
+  buffer.cur_pos++;
+  return buffer.cur_pos;
 }
 
 bool is_prime(int n)
@@ -410,25 +414,25 @@ int get_rand(int start, int end)
   
 }
 
-int remove(Buffer buf)
+int remove()
 {
-  if(buf.cur_pos == 0){
+  if(buffer.cur_pos == 0){
     return -1;
     // Throw error instead;
   }else{
-    buf.cur_pos--;
-    return *buf.data[0];
+    buffer.cur_pos--;
+    return buffer.data[buffer.cur_pos];
   }
 }
 
-void print_buffer(Buffer buf)
+void print_buffer()
 {
 
-  cout << "  (" << buf.cur_pos << "): [  ";
+  cout << "  (" << buffer.cur_pos << "): [  ";
 
-  for(int i = 0; i < buf.cur_pos; i++)
+  for(int i = buffer.cur_pos-1; i > -1; i--)
   {
-    cout << *buf.data[i] << "  ";
+    cout << buffer.data[i] << "  ";
   }
 
   cout << "]";

@@ -2,7 +2,10 @@
 # Harrison Engel and Duy Dang
 #
 
-all: proj3
+all: osproj3
 
-proj3: proj3.cpp
-	g++ -o proj3 proj3.cpp -lpthread
+osproj3: osproj3.cpp
+	g++ -std=c++11 -o osproj3 osproj3.cpp -lpthread
+
+clean:
+	rm osproj3
