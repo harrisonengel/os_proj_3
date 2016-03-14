@@ -60,14 +60,47 @@ void *fake_prod(void *arg);
 /*******************************
      Main Function
 
-The main function of the program.
-Its algorithm is:
+ The main function of the program.
+ Its algorithm is:
      1) Read in Parameters and check
        for errors.
      2) Initialize Semaphores
      3) Spawn threads
      4) Join threads
      5) Print Results
+
+ Return Value
+ ------------
+ int       Process return value.
+
+ Parameters
+ ----------
+ args      The number of arguments
+ argv      The parameter arguments
+
+ Local Variables
+ ---------------
+ int:
+  i           Loop counter
+  start       Start time return value.
+ int[]:
+  prod_ids    Producer thread IDs
+  fault_ids   Fautly thread IDs
+  cons_ids    Consumer thread IDs
+ double:
+  simulation_time_in_seconds 
+              The simulation time
+ pthread_t[]:
+  producer_threads
+              Array of producer threads
+  faulty_threads
+              Array of faulty threads
+  consumer_threads
+              Array of consumer threads
+ timeval:
+  start_time  The start time of the process
+  end_time    The end time of the process
+
 ********************************/
 int main(int args, char *argv[])  
 {
