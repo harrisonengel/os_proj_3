@@ -292,6 +292,32 @@ int main(int args, char *argv[])
 
 /*******************************
      Producer Function
+
+ Function for threads that produce prime
+ integers and attempt to insert them into
+ the buffer.
+
+ Return Value
+ ------------
+ void*         Not used.
+
+ Parameters
+ ----------
+ void* arg     Used to pass in the thread's ID
+ 
+ Local Variables
+ ---------------
+ int:
+  id       ID of the thread
+  prime    Prime number to insert
+  number_of_items_inserted
+           Number of items inserted
+  insert_status
+           Used to determine if insert was a success
+ int*:
+  id_container
+           Used to extract an int from arg.
+
 ********************************/
 void *prod(void *arg)
 {
@@ -348,6 +374,32 @@ void *prod(void *arg)
 
 /*******************************
      Fake Producer Function
+
+ Function for threads that produce random
+ integers and attempt to insert them into
+ the buffer.
+
+ Return Value
+ ------------
+ void*         Not used.
+
+ Parameters
+ ----------
+ void* arg     Used to pass in the thread's ID
+ 
+ Local Variables
+ ---------------
+ int:
+  id       ID of the thread
+  number   "Fake" prime to insert
+  number_of_items_inserted
+           Number of items inserted
+  insert_status
+           Used to determine if insert was a success
+ int*:
+  id_container
+           Used to extract an int from arg.
+
 ********************************/
 void *fake_prod(void *arg)
 {
@@ -400,6 +452,31 @@ void *fake_prod(void *arg)
 
 /*******************************
      Consumer Function
+
+ Function for consumer threads.
+ Attempts to take integers from
+ the buffer.
+
+ Return Value
+ ------------
+ void*         Not used.
+
+ Parameters
+ ----------
+ void* arg     Used to pass in the thread's ID
+ 
+ Local Variables
+ ---------------
+ int:
+  id       ID of the thread
+  remove_status
+           Used to determine if remove was a success
+  number_of_items_removed:
+           The number of items removed so far.
+ int*:
+  id_container
+           Used to extract an int from arg.
+
 ********************************/
 void *cons(void *arg)
 {
@@ -456,6 +533,21 @@ void *cons(void *arg)
 
 /*******************************
      Insert Function
+
+ Function for inserting into the buffer.
+
+ Return Value
+ ------------
+ int           -1 if failed, otherwise the current buffer position.
+
+ Parameters
+ ----------
+ int:
+  input    Integer to attempt to input into the buffer.
+ 
+ Local Variables
+ ---------------
+ None.
 ********************************/
 int insert(int input)
 {
@@ -471,6 +563,23 @@ int insert(int input)
 
 /*******************************
      Is Prime Function
+
+ Determines if an integer is a prime number.
+
+ Return Value
+ ------------
+ bool      true if input a prime, false otherwise     
+
+ Parameters
+ ----------
+ int:
+  n        Number to check if prime
+ 
+ Local Variables
+ ---------------
+ int:
+   sqr     The square root (rounded down) of n.
+   i       Loop counter
 ********************************/
 bool is_prime(int n)
 {
@@ -488,6 +597,23 @@ bool is_prime(int n)
 
 /*******************************
      Get Random Function
+
+ Generates a random number.
+
+ Return Value
+ ------------
+ int       Random number
+
+ Parameters
+ ----------
+ int:
+  start    Min random number (inclusive)
+  end      Max random number (inclusive
+ 
+ Local Variables
+ ---------------
+ int:
+  n        Random number.
 ********************************/
 int get_rand(int start, int end)
 {
@@ -498,6 +624,22 @@ int get_rand(int start, int end)
 
 /*******************************
      Remove Function
+
+ Removes an integer from the buffer
+
+ Return Value
+ ------------
+ int       -1 if nothing to remove.
+           Otherwise returns the buffer's
+           current position.
+
+ Parameters
+ ----------
+ None
+ 
+ Local Variables
+ ---------------
+ None
 ********************************/
 int remove()
 {
@@ -512,6 +654,21 @@ int remove()
 
 /*******************************
      Print Buffer Function
+
+ Prints the buffer in the desired format.
+
+ Return Value
+ ------------
+ void
+
+ Parameters
+ ----------
+ None
+ 
+ Local Variables
+ ---------------
+ int:
+  i     Loop Counter
 ********************************/
 void print_buffer()
 {
