@@ -14,7 +14,7 @@
 #include <vector>
 #include <semaphore.h>
 #include <pthread.h>
-#include <time.h>
+#include <sys/time.h>
 #include <cstdlib>
 #include <cstring>
 
@@ -62,35 +62,42 @@ int main(int args, char *argv[])
   for(i=1; i<args; i++)
     {
       s = string(argv[i]);
-      if(!s.compare("-n")){
-	items = atoi(argv[i+1]);
+      if(i+1 != args || (!s.compare("-d") && (i+1 == args))){
+	if(!s.compare("-n")){
+	  items = atoi(argv[i+1]);
+	  i++;
+	} else if(!s.compare("-l")){
+	  buf_len = atoi(argv[i+1]);
+	  i++;
+	} else if(!s.compare("-p")){
+	  prod_threads = atoi(argv[i+1]);
+	  i++;
+	} else if(!s.compare("-f")){
+	  fault_threads = atoi(argv[i+1]);
+	  i++;
+	} else if(!s.compare("-c")){
+	  cons_threads = atoi(argv[i+1]);
+	  i++;
+	} else if(!s.compare("-d")){
+	  debug = true;
+	}else
+	  {
+	    cout << "ERROR: Incorrect parameter format.\n";
+	    return(-1);
+	  }
       }
-      
-      if(!s.compare("-l")){
-	buf_len = atoi(argv[i+1]);
-      }
-
-      if(!s.compare("-p")){
-	prod_threads = atoi(argv[i+1]);
-      }
-
-      if(!s.compare("-f")){
-	fault_threads = atoi(argv[i+1]);
-      }
-
-      if(!s.compare("-c")){
-	cons_threads = atoi(argv[i+1]);
-      }
-
-      if(!s.compare("-d")){
-	debug = true;
-      }
-   }
+      else
+	{
+	  cout << "ERROR: Incorrect parameter format.\n";
+	  return(-1);
+	}
+    }
 
   // Implement some sort of error solution
   if(items < 0 || buf_len < 0 || prod_threads < 0 || fault_threads < 0
      || cons_threads < 0){
-    cout << "ERROR\n";
+    cout << "ERROR: Missing parameter(s). \n";
+    return(-1);
   }
 
   for (i=0; i < buf_len; i++) {
@@ -126,7 +133,8 @@ int main(int args, char *argv[])
 
 
   //Start keeping track of time:
-  time_t start = time(0);
+  timeval start_time, end_time;
+  int start = gettimeofday(&start_time, NULL);
 
   /* Create independent threads each of which will execute function */
 
@@ -171,8 +179,10 @@ int main(int args, char *argv[])
       pthread_join( consumer_threads[i], NULL);
     }
 
-  double simulation_time_in_seconds = difftime(time(0), start);
-
+  //double simulation_time_in_seconds = difftime(time(NULL), start);
+  int end = gettimeofday(&end_time, NULL);
+  double simulation_time_in_seconds = (long long)(end_time.tv_usec - start_time.tv_usec) / 1000000.0;
+  simulation_time_in_seconds += (long long)(end_time.tv_sec - start_time.tv_sec) / 1.0;
   //Print statistics
   cout << "\nPRODUCER / CONSUMER SIMULATION COMPLETE";
 
@@ -226,7 +236,7 @@ int main(int args, char *argv[])
 
   cout << "\n";
   
-  cout << "Total Simulation Time: " << simulation_time_in_seconds << " seconds\n";
+  cout << "Total Simulation Time: " << to_string(simulation_time_in_seconds) << " seconds\n";
 
   return 0;
 }
@@ -259,19 +269,21 @@ void *prod(void *arg)
 
       number_of_items_inserted++;
 
-      cout << "(PRODUCER  " << id+1 << " writes   " << number_of_items_inserted << "/" << items << "   " << prime << "):";
-
-      print_buffer();
-
+      if(debug)
+	{
+	  cout << "(PRODUCER  " << id+1 << " writes   " << number_of_items_inserted << "/" << items << "   " << prime << "):";
+	  print_buffer();
+	}
       if(buffer.size == buffer.cur_pos) {
-        
-        cout << " *BUFFER NOW FULL*";
+	if(debug)
+	  cout << " *BUFFER NOW FULL*";
 
         time_full++;
 
       }
 
-      cout << "\n";
+      if(debug)
+	cout << "\n";
 
     }
 
@@ -307,20 +319,21 @@ void *fake_prod(void *arg)
     if (insert_status != -1) {
 
       number_of_items_inserted++;
-
-      cout << "(PR*D*C*R  " << id+1 << " writes   " << number_of_items_inserted << "/" << items << "   " << number << "):";
-
-      print_buffer();
-
+      if(debug)
+	{
+	  cout << "(PR*D*C*R  " << id+1 << " writes   " << number_of_items_inserted << "/" << items << "   " << number << "):";
+	  print_buffer();
+	}
+      
       if(buffer.size == buffer.cur_pos) {
-        
-        cout << " *BUFFER NOW FULL*";
+	if(debug)
+	  cout << " *BUFFER NOW FULL*";
 
         time_full++;
 
       }
-
-      cout << "\n";
+      if(debug)
+	cout << "\n";
 
     }
 
@@ -352,26 +365,28 @@ void *cons(void *arg)
       individual_consumptions[id]++;
 
       number_of_items_removed++;
-
-      cout << "(CONSUMER  " << id+1 << " reads   " << number_of_items_removed << "       " << remove_status << "):";
-
-      print_buffer();
-
+      if(debug)
+	{
+	  cout << "(CONSUMER  " << id+1 << " reads   " << number_of_items_removed << "       " << remove_status << "):";
+	  print_buffer();
+	}
+      
       if (!is_prime(remove_status)) {
-        cout << " *NOT PRIME*";
+	if(debug)
+	  cout << " *NOT PRIME*";
 
         time_non_prime++;
       }
 
       if(buffer.cur_pos == 0){
-        
-        cout << " *BUFFER NOW EMPTY*";
+        if(debug)
+	  cout << " *BUFFER NOW EMPTY*";
 
         time_empty++;
 
       }
-
-      cout << "\n";
+      if(debug)
+	cout << "\n";
 
     }
 
