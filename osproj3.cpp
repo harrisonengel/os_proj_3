@@ -37,7 +37,11 @@ int cons_threads = -1;
 bool debug = false;
 
 static vector<int> individual_consumptions;
-
+/* 
+   Buffer Structure:
+   Maintains the buffer, its size
+   and the current position.
+ */
 struct Buffer{
   vector<int> data;
   int size;
@@ -53,6 +57,18 @@ void *prod(void *arg);
 void *cons(void *arg);
 void *fake_prod(void *arg);
 
+/*******************************
+     Main Function
+
+The main function of the program.
+Its algorithm is:
+     1) Read in Parameters and check
+       for errors.
+     2) Initialize Semaphores
+     3) Spawn threads
+     4) Join threads
+     5) Print Results
+********************************/
 int main(int args, char *argv[])  
 {
   // Parse Args
@@ -241,6 +257,9 @@ int main(int args, char *argv[])
   return 0;
 }
 
+/*******************************
+     Producer Function
+********************************/
 void *prod(void *arg)
 {
   //Buffer *buf = (struct Buffer*)arg;
@@ -294,6 +313,9 @@ void *prod(void *arg)
 
 }
 
+/*******************************
+     Fake Producer Function
+********************************/
 void *fake_prod(void *arg)
 {
   //Buffer *buf = (struct Buffer*)arg;
@@ -343,6 +365,9 @@ void *fake_prod(void *arg)
 
 }
 
+/*******************************
+     Consumer Function
+********************************/
 void *cons(void *arg)
 {
   //Buffer *buf = (struct Buffer*)arg;
@@ -396,6 +421,9 @@ void *cons(void *arg)
   
 }
 
+/*******************************
+     Insert Function
+********************************/
 int insert(int input)
 {
   if(buffer.size == buffer.cur_pos)
@@ -408,6 +436,9 @@ int insert(int input)
   return buffer.cur_pos;
 }
 
+/*******************************
+     Is Prime Function
+********************************/
 bool is_prime(int n)
 {
   int sqr = (int)sqrt(n);
@@ -422,6 +453,9 @@ bool is_prime(int n)
 }
 
 
+/*******************************
+     Get Random Function
+********************************/
 int get_rand(int start, int end)
 {
   int n = rand();
@@ -429,6 +463,9 @@ int get_rand(int start, int end)
   
 }
 
+/*******************************
+     Remove Function
+********************************/
 int remove()
 {
   if(buffer.cur_pos == 0){
@@ -440,6 +477,9 @@ int remove()
   }
 }
 
+/*******************************
+     Print Buffer Function
+********************************/
 void print_buffer()
 {
 
