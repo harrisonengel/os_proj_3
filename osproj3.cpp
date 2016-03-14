@@ -20,6 +20,30 @@
 
 using namespace std;
 
+/***************************
+
+ Global Variables
+ ----------------
+ sem_t:
+  semaphore         The critical semaphore.
+ int:
+  total_consumed    The total items consumed so far
+  total_to_be_consumed
+                    The total items to be consumed
+  time_full         Number of times buffer became full
+  time_empty        Number of times buffer became empty
+  time_non_prime    Times consumer received non-prime
+  items             Number of ints to produce / thread
+  buf_len           The buffer length
+  prod_threads      Number of producer threads
+  fault_threads     Number of faulty threads
+  cons_threads      Number of consumer threads
+ bool:
+  debug             Whether or not to produce debugger output
+
+ Buffer:
+  buffer            Structure representing the buffer.
+*****************************/
 sem_t semaphore;
 
 int total_consumed = 0; //only to be accessed between sem_wait() and sem_post()
@@ -37,11 +61,19 @@ int cons_threads = -1;
 bool debug = false;
 
 static vector<int> individual_consumptions;
-/* 
+/***********************************
+ 
    Buffer Structure:
-   Maintains the buffer, its size
-   and the current position.
- */
+
+ Variables
+ ---------
+ int:
+  size      The size of the buffer
+  cur_pos   The current position in the buffer
+ vector<int>:
+  data      The data in the buffer.
+
+**************************************/
 struct Buffer{
   vector<int> data;
   int size;
